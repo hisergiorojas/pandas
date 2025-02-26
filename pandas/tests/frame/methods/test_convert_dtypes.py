@@ -189,3 +189,25 @@ class TestConvertDtypes:
         )
         tm.assert_frame_equal(result, expected)
         assert result._mgr.nblocks == 2
+
+    def test_convert_dtypes_from_arrow(self):
+        # GH#56581
+        df = pd.DataFrame([["a", datetime.time(18, 12)]], columns=["a", "b"])
+        result = df.convert_dtypes()
+        expected = df.astype({"a": "string[python]"})
+        tm.assert_frame_equal(result, expected)
+
+    def test_convert_dtype_pyarrow_timezone_preserve(self):
+        # GH 60237
+        pytest.importorskip("pyarrow")
+        df = pd.DataFrame(
+            {
+                "timestamps": pd.Series(
+                    pd.to_datetime(range(5), utc=True, unit="h"),
+                    dtype="timestamp[ns, tz=UTC][pyarrow]",
+                )
+            }
+        )
+        result = df.convert_dtypes(dtype_backend="pyarrow")
+        expected = df.copy()
+        tm.assert_frame_equal(result, expected)
